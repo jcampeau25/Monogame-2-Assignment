@@ -15,18 +15,19 @@ namespace Monogame_2___Assignment
 
         MouseState mouseState, prevMouseState;
 
-        Texture2D bubbleTexture, backgroundTexture, bombTexture, explosionTexture;
+        Texture2D bubbleTexture, backgroundTexture, pufferfishTexture;
 
-        Rectangle window, bombRect, explosionRect;
+        SpriteFont scoreFont;
+
+        Rectangle window, pufferfishRect;
 
         Screen screen;
 
-        float seconds, bombSeconds;
+        float seconds;
 
-        int score, scrollValue;
+        int score, scrollValue, prevScrollValue, scrollChange, puffersfishPopped;
 
-        bool bomb = false;
-        bool explosion = false;
+
         bool collision = false;
 
         Random generator = new Random();
@@ -68,12 +69,13 @@ namespace Monogame_2___Assignment
             _graphics.PreferredBackBufferHeight = 600;
             _graphics.ApplyChanges();
 
-            
 
-            bombTexture = Content.Load<Texture2D>("Images/blackbomb");
-            explosionTexture = Content.Load<Texture2D>("Images/explosion");
+
+            pufferfishTexture = Content.Load<Texture2D>("Images/pufferfish");
             bubbleTexture = Content.Load<Texture2D>("Images/pinkbubble");
             backgroundTexture = Content.Load<Texture2D>("Images/underwater");
+
+            scoreFont = Content.Load<SpriteFont>("scorefont");
 
             // TODO: use this.Content to load your game content here
         }
@@ -88,6 +90,9 @@ namespace Monogame_2___Assignment
 
             prevMouseState = mouseState;
             mouseState = Mouse.GetState();
+            prevScrollValue = scrollValue;
+            scrollValue = mouseState.ScrollWheelValue;
+            scrollChange = scrollValue - prevScrollValue;
 
             scrollValue += mouseState.ScrollWheelValue;
 
@@ -97,23 +102,12 @@ namespace Monogame_2___Assignment
 
                 seconds += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-                if (bomb == false)
-                {
-                    if (mouseState.RightButton == ButtonState.Pressed && prevMouseState.RightButton == ButtonState.Released)
-                    {
-                        bomb = true;
-                        bombRect = new Rectangle(mouseState.X - 62, mouseState.Y - 50, 125, 100);
-                        explosionRect = new Rectangle(mouseState.X - 150, mouseState.Y - 150, 300, 300);
-                    }
-                }
+              
 
                 if (mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton == ButtonState.Released)
                 {
-                    if (bombRect.Contains(mouseState.Position))
-                    {
-                        explosion = true;
+                    
 
-                    }
 
                     for (int i = 0; i < bubbles.Count; i++)
                     {
@@ -126,10 +120,31 @@ namespace Monogame_2___Assignment
                     }
                 }
 
-
-                if ((seconds >= 0.5 && bubbles.Count < 50) || scrollValue >=1)
+                for (int i = 0; i < bubbles.Count; i++)
                 {
-                    scrollValue -= scrollValue;
+                    if (bubbles[i].Intersects(pufferfishRect))
+                    {
+                        bubbles.RemoveAt(i);
+                        score++;
+                        puffersfishPopped++;
+                        i--;
+                    }
+                }
+
+                if (mouseState.RightButton == ButtonState.Pressed && prevMouseState.RightButton == ButtonState.Released)
+                {
+                    pufferfishRect = new Rectangle(mouseState.X - 335, mouseState.Y - 335, 670, 670);
+                }
+
+                if (scrollChange >= 0)
+                {
+                    Rectangle tempBubble = new Rectangle(generator.Next(0, window.Width - 100), generator.Next(0, window.Height - 100), 100, 100);
+                    bubbles.Add(tempBubble);
+
+                }
+
+                if (seconds >= 0.5 && bubbles.Count < 50)
+                {
 
                     Rectangle tempBubble = new Rectangle(generator.Next(0, window.Width - 100), generator.Next(0, window.Height - 100), 100, 100);
 
@@ -159,35 +174,29 @@ namespace Monogame_2___Assignment
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
+
+            // TODO: Add your drawing code here
+
             _spriteBatch.Begin();
 
             if (screen == Screen.Game)
             {
                 _spriteBatch.Draw(backgroundTexture, window, Color.White);
 
-                if (bomb == true)
-                {
-                    _spriteBatch.Draw(bombTexture, bombRect, Color.White);
-                }
-
-                if (explosion == true)
-                {
-                    _spriteBatch.Draw(explosionTexture, explosionRect, Color.White);
-
-                    if (bombSeconds >= 1)
-                    {
-                        explosion = false;
-                    }
-                }
+                _spriteBatch.Draw(pufferfishTexture, pufferfishRect, Color.White);
 
                 for (int i = 0; i < bubbles.Count; i++)
                 {
                     _spriteBatch.Draw(bubbleTexture, bubbles[i], Color.White);
                 }
+
+                _spriteBatch.DrawString(scoreFont, $"Bubbles Popped: {score}", new Vector2 (10, 10), Color.Orange);
+                _spriteBatch.DrawString(scoreFont, $"Popped by fish: {puffersfishPopped}", new Vector2(10, 50), Color.Orange);
+
             }
+
+
             _spriteBatch.End();
-            // TODO: Add your drawing code here
 
             base.Draw(gameTime);
         }
